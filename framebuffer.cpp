@@ -132,14 +132,12 @@ void FrameBuffer::SaveAsTiff(const char* fname) {
 }
 
 void FrameBuffer::Set(int u, int v, unsigned int col) {
-
 	int uv = (h - 1 - v) * w + u;
 	pix[uv] = col;
 
 }
 
 unsigned int FrameBuffer::Get(int u, int v) {
-
 	int uv = (h - 1 - v) * w + u;
 	return pix[uv];
 

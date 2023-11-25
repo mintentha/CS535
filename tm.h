@@ -17,6 +17,7 @@ public:
 	TM() : verts(0), vertsN(0), tris(0), trisN(0), colors(0), normals(0),
 		pverts(0), tcs(0), texture(0), on(1) {};
 	void SetQuad(V3 v0, V3 v1, V3 v2, V3 v3);
+	void QuadTextureSize(float w, float h);
 	void Allocate(int vsN, int trsN);
 	void LoadBin(char *fname);
 	void RenderPoints(FrameBuffer *fb, int psize, PPC *ppc);

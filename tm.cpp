@@ -56,6 +56,22 @@ void TM::SetQuad(V3 v0, V3 v1, V3 v2, V3 v3) {
 }
 
 
+void TM::QuadTextureSize(float w, float h) {
+	// w, h represent size of the texture in terms of percent of the quad
+	// anywhere outside of the size of the texture will be tiled
+	tcs[0][0] = 0.0f;
+	tcs[0][1] = 0.0f;
+
+	tcs[1][0] = 0.0f;
+	tcs[1][1] = 1.0f / h;
+
+	tcs[2][0] = 1.0f / w;
+	tcs[2][1] = 1.0f / h;
+
+	tcs[3][0] = 1.0f / w;
+	tcs[3][1] = 0.0f;
+}
+
 void TM::LoadBin(char *fname) {
 
 	ifstream ifs(fname, ios::binary);
@@ -161,6 +177,9 @@ void TM::RenderFilled(FrameBuffer* fb, PPC* ppc) {
 	}
 	for (int tri = 0; tri < 3 * trisN; tri += 3) {
 		int tri_vert_inds[] = { tris[tri], tris[tri + 1], tris[tri + 2] };
+		V3 tri_verts[] = { verts[tri_vert_inds[0]],
+						   verts[tri_vert_inds[1]],
+						   verts[tri_vert_inds[2]] };
 		V3 tri_proj_verts[] = { pverts[tri_vert_inds[0]],
 								pverts[tri_vert_inds[1]],
 								pverts[tri_vert_inds[2]] };
@@ -198,13 +217,26 @@ void TM::RenderFilled(FrameBuffer* fb, PPC* ppc) {
 		colsABCs = (ssim * vcols).Transposed();
 
 		// set up linear screen space interpolation of texture coordinates
+
+		// instead of interpolating on screen space with (u, v),
+		// want to interpolate on triangle space with (k, l) where k and l are coordinates
+		// relative to triangle
+		// P = V_1 + (V_2 - V_1)k + (V_3 - V_1)l
+		// P = C + (c + ua + vb)w
+		// solve for k, l having interpolated P
+		// r = r_1 + (r_2 - r_1)k + (r_3 - r_1)l
+		// [V_1 - C, V_2 - C, V_3 - C][1 - k - l \\ k \\ l] = [a, b, c][u \\ v \\ 1]w
+		// [1 - k - l \\ k \\ l] = M[u \\ v \\ 1]w
 		M33 vtcs;
 		M33 tcsABCs;
+		M33 tcsQT;
 		if (tcs) {
 			vtcs[0] = tcs[tri_vert_inds[0]];
 			vtcs[1] = tcs[tri_vert_inds[1]];
 			vtcs[2] = tcs[tri_vert_inds[2]];
 			tcsABCs = (ssim * vtcs).Transposed();
+			M33 vMinusCMat = M33(tri_verts[0] - ppc->C, tri_verts[1] - ppc->C, tri_verts[2] - ppc->C).Transposed();
+			tcsQT = (vMinusCMat.Inverted() * M33(ppc->a, ppc->b, ppc->c).Transposed()).Transposed();
 		}
 
 
@@ -227,9 +259,26 @@ void TM::RenderFilled(FrameBuffer* fb, PPC* ppc) {
 				fb->SetZ(u, v, currz);
 
 				if (texture) {
-					V3 currtcs = tcsABCs * pixCenter;
+
+					
+					/*V3 currtcs = tcsABCs * pixCenter;
 					int tu = (int)(currtcs[0] * (float)texture->w);
-					int tv = (int)(currtcs[1] * (float)texture->h);
+					int tv = (int)(currtcs[1] * (float)texture->h);*/
+					
+
+					//V3 triCoords = tcsPCImat * V3(u, v, 1) / currz;
+					//// triCoords is now [1 - k - l, k, l]
+					//// r = r_1 + (r_2 - r_1)k + (r_3 - r_1)l
+					//// Could probably rearrange to get r in terms of matrix multiplication or something
+					//float k = triCoords[1];
+					//float l = triCoords[2];
+					//V3 r = vtcs[0] + (vtcs[1] - vtcs[0]) * k + (vtcs[2] - vtcs[1]) * l;
+					//int tu = (int) (r[0] * (float)texture->w) % texture->w;
+					//int tv = (int) (r[1] * (float)texture->h) % texture->h;
+					float ru = (tcsQT * vtcs.GetColumn(0) * V3(u, v, 1)) / (tcsQT * V3(1, 1, 1) * V3(u, v, 1));
+					float rv = (tcsQT * vtcs.GetColumn(1) * V3(u, v, 1)) / (tcsQT * V3(1, 1, 1) * V3(u, v, 1));
+					int tu = max(((int) (ru * (float)texture->w)) % (texture->w), 0);
+					int tv = max(((int) (rv * (float)texture->h)) % (texture->h), 0);
 					fb->Set(u, v, texture->Get(tu, tv));
 				}
 				else {

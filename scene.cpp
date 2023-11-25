@@ -34,26 +34,26 @@ Scene::Scene() {
 
 	float hfov = 55.0f;
 	ppc = new PPC(hfov, fb->w, fb->h);
-	tmsN = 4;
+	tmsN = 6;
 	tms = new TM[tmsN];
 	tms[0].LoadBin("geometry/teapot1K.bin");
 	//	tms[0].LoadBin("geometry/teapot57K.bin");
 	V3 tv(20.0f, -20.0f, -200.0f);
 	tms[0].Translate(tv);
-	//tms[0].on = false;
+	tms[0].on = false;
 
 
-	FrameBuffer* texture = new FrameBuffer(10, 10, 128, 128);
-	texture->SetAsChecker(0xFF000000, 0xFFAAAAAA, 32);
-	texture->label("Texture");
+	FrameBuffer* texture1 = new FrameBuffer(10, 10, 128, 128);
+	texture1->LoadTiff("textures/brick.tiff");
+	FrameBuffer* texture2 = new FrameBuffer(10, 10, 128, 128);
+	texture2->LoadTiff("textures/chalkboard.tiff");
+	FrameBuffer* texture3 = new FrameBuffer(10, 10, 128, 128);
+	texture3->LoadTiff("textures/pillar.tiff");
+	FrameBuffer* texture4 = new FrameBuffer(10, 10, 128, 128);
+	texture4->LoadTiff("textures/fuzz.tiff");
+	FrameBuffer* texture5 = new FrameBuffer(10, 10, 128, 128);
+	texture5->LoadTiff("textures/reflection.tiff");
 	//texture->show();
-
-	tms[1].SetQuad(V3(-100.0f, 100.0f, -350.0f),
-		V3(-100.0f, -100.0f, -350.0f),
-		V3(100.0f, -100.0f, -350.0f),
-		V3(100.0f, 100.0f, -350.0f));
-	tms[1].texture = texture;
-	tms[1].on = false;
 
 	AABB aabb = tms[0].GetAABB();
 	tms[2].SetQuad(
@@ -67,16 +67,41 @@ Scene::Scene() {
 	tms[2].Scale(3.0f);
 	tms[2].Translate(qc);
 	tms[2].SetAllColors(V3(0.9f, 0.9f, 0.9f));
+	tms[2].texture = texture1;
 
 
-	tms[3].LoadBin("geometry/bunny.bin");
-	//	tms[0].LoadBin("geometry/teapot57K.bin");
-	tms[3].SetCenter(tms[0].GetCenter());
-	tms[3].Scale(125.0f);
-	tms[3].Translate(V3(70.0f, 0.0f, 20.0f));
-	AABB bunnybb = tms[3].GetAABB();
-	tms[3].Translate(V3(0.0f, -bunnybb.cornerLow[1] + aabb.cornerLow[1] + 10.0f, 0.0f));
-	tms[3].SetAllColors(V3(1.0f, 0.5f, 0.76f));
+	tms[1].SetQuad(
+		V3(aabb.corners[0][0], aabb.corners[0][1], aabb.corners[0][2]),
+		V3(aabb.corners[0][0], 150.0f, aabb.corners[0][2]),
+		V3(aabb.corners[0][0] - 20, 150.0f, aabb.corners[1][2]),
+		V3(aabb.corners[0][0] - 20, aabb.corners[0][1], aabb.corners[1][2]));
+	tms[1].texture = texture2;
+	tms[1].on = true;
+	tms[1].QuadTextureSize(0.5f, 0.25f);
+
+
+	tms[3].SetQuad(V3(-100.0f, 100.0f, -350.0f),
+		V3(-100.0f, -100.0f, -350.0f),
+		V3(100.0f, -100.0f, -350.0f),
+		V3(100.0f, 100.0f, -350.0f));
+	tms[3].texture = texture3;
+	tms[3].on = true;
+	tms[3].QuadTextureSize(0.5f, 0.25f);
+
+	tms[4].SetQuad(V3(-100.0f, 100.0f, -350.0f),
+		V3(-100.0f, -100.0f, -350.0f),
+		V3(-200.0f, -100.0f, -350.0f),
+		V3(-200.0f, 100.0f, -350.0f));
+	tms[4].texture = texture4;
+	tms[4].on = true;
+
+	tms[5].SetQuad(
+		V3(aabb.corners[1][0], aabb.corners[0][1], aabb.corners[0][2]),
+		V3(aabb.corners[1][0], 150.0f, aabb.corners[0][2]),
+		V3(aabb.corners[1][0] + 50, 150.0f, aabb.corners[1][2]),
+		V3(aabb.corners[1][0] + 50, aabb.corners[0][1], aabb.corners[1][2]));
+	tms[5].texture = texture5;
+	tms[5].on = true;
 
 	fb3 = new FrameBuffer(u0, v0, w, h);
 	fb3->position(u0 + w + u0, v0);
@@ -140,15 +165,13 @@ void Scene::Render() {
 }
 
 void Scene::DBG() {
-	int framesN = 600;
+	int framesN = 300;
 	int fi = 0;
 	int fps = 30;
 	std::chrono::duration<double> frame_length(1.0 / fps);
 	auto last_frame = std::chrono::high_resolution_clock::now();
-
 	shfb = new FrameBuffer(10, 10 + fb->h + 50, 256, 256);
 	shppc = new PPC(50.0f, shfb->w, shfb->h);
-	ppc->SetPose(V3(0.0f, 40.0f, 0.0f), tms[0].GetCenter(), V3(0.0f, 1.0f, 0.0f));
 	shfb->show();
 	shfb->label("shadow view");
 	L = tms[0].GetCenter() + V3(-150.0f, 0.0f, 0.0f);
@@ -161,10 +184,6 @@ void Scene::DBG() {
 			FilledRender(shppc, shfb);
 			shadowsOn = 1;
 			Render();
-			std::string filename("frames/");
-			filename = filename + std::to_string(fi);
-			filename = filename + ".tiff";
-			fb->SaveAsTiff(filename.c_str());
 			Fl::check();
 			fi++;
 		}
