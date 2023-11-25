@@ -1,5 +1,6 @@
 #include "ppc.h"
 #include "M33.h"
+#include "framebuffer.h"
 
 PPC::PPC(float hfov, int _w, int _h) {
 
@@ -33,6 +34,18 @@ int PPC::Project(V3 P, V3 &pP) {
 
 }
 
+int PPC::UnProject(V3 pP, V3& P) {
+
+	if (pP[2] == 0.0f) {
+		return 0;
+	}
+
+	P = C + (a * pP[0] + b * pP[1] + c) / pP[2];
+
+	return 1;
+
+}
+
 void PPC::translate(int dir, float amt) {
 	switch (dir) {
 		case DIR_UP_DOWN:
@@ -48,21 +61,98 @@ void PPC::translate(int dir, float amt) {
 }
 
 void PPC::rotate(int axis, float theta) {
-	float rad = theta * M_PI / 180.0f;
 	switch (axis) {
 		case PAN:
-			a = a.rotateVector(b, rad);
-			c = c.rotateVector(b, rad);
+			a = a.rotateVector(b, -theta);
+			c = c.rotateVector(b, -theta);
 			break;
 		case TILT:
-			b = b.rotateVector(a, rad);
-			c = c.rotateVector(a, rad);
+			b = b.rotateVector(a, theta);
+			c = c.rotateVector(a, theta);
 			break;
 		case ROLL:
 			V3 aD = (a ^ b).normalized();
-			a = a.rotateVector(aD, rad);
-			b = b.rotateVector(aD, rad);
-			c = c.rotateVector(aD, rad);
+			a = a.rotateVector(aD, theta);
+			b = b.rotateVector(aD, theta);
+			c = c.rotateVector(aD, theta);
 			break;
 	}
+}
+
+
+float PPC::GetF() {
+
+	V3 vd = (a ^ b).normalized();
+	return c * vd;
+
+}
+
+void PPC::SetF(float f) {
+	// want f = c * (a^b)
+	c = c * f / GetF();
+}
+
+void PPC::SetPose(V3 newC, V3 LaP, V3 upgv) {
+
+	V3 newa, newb, newc;
+
+	V3 newvd = (LaP - newC).normalized();
+	newa = (newvd ^ upgv).normalized();
+	newb = (newvd ^ newa).normalized();
+	float f = GetF();
+	newc = newvd * f - newa * (float)(w / 2) - newb * (float)h / 2;
+
+	a = newa;
+	b = newb;
+	c = newc;
+	C = newC;
+
+}
+
+V3 PPC::GetVD() {
+
+	return (a ^ b).normalized();
+
+}
+
+void PPC::SetInterpolated(PPC* ppc0, PPC* ppc1, int fi, int fN) {
+
+	*this = *ppc0;
+
+	float ff = (float)fi / (float)(fN - 1);
+	V3 newC = ppc0->C + (ppc1->C - ppc0->C) * ff;
+	V3 newvd = ppc0->GetVD() + (ppc1->GetVD() - ppc0->GetVD()) * ff;
+	V3 LaP = newC + newvd * 100.0f;
+	V3 upgv = (ppc0->b + (ppc1->b - ppc0->b) * ff) * -1.0f;
+
+	SetPose(newC, LaP, upgv);
+
+}
+
+void PPC::Visualize(float visf, PPC* ppc, FrameBuffer* fb) {
+
+	fb->Draw3DPoint(C, V3(0.0f, 0.0f, 0.0f), 7, ppc);
+
+	float scf = visf / GetF();
+	V3 visa = a * scf;
+	V3 visb = b * scf;
+	V3 visc = c * scf;
+
+	fb->Draw3DPoint(C + visc, V3(1.0f, 0.0f, 0.0f), 5, ppc);
+	fb->Draw3DPoint(C + visc + visa * (float)w, V3(0.0f, 1.0f, 0.0f), 5, ppc);
+	fb->Draw3DPoint(C + visc + visb * (float)h, V3(0.0f, 0.0f, 1.0f), 5, ppc);
+
+	fb->Draw3DSegment(C, V3(0.0f, 0.0f, 0.0f), C + visc, V3(0.0f, 0.0f, 0.0f), ppc);
+
+	fb->Draw3DSegment(C + visc, V3(0.0f, 0.0f, 0.0f), C + visc + visa * (float)w, V3(0.0f, 0.0f, 0.0f), ppc);
+	fb->Draw3DSegment(C + visc + visa * (float)w, V3(0.0f, 0.0f, 0.0f),
+		C + visc + visa * (float)w + visb * (float)h, V3(0.0f, 0.0f, 0.0f),
+		ppc);
+	fb->Draw3DSegment(C + visc + visa * (float)w + visb * (float)h, V3(0.0f, 0.0f, 0.0f),
+		C + visc + visb * (float)h, V3(0.0f, 0.0f, 0.0f),
+		ppc);
+	fb->Draw3DSegment(C + visc + visb * (float)h, V3(0.0f, 0.0f, 0.0f),
+		C + visc, V3(0.0f, 0.0f, 0.0f),
+		ppc);
+
 }

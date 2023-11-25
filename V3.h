@@ -25,6 +25,9 @@ public:
 	V3 normalized();
 	float length();
 	unsigned int GetColor();
+	void SetColor(unsigned int color);
 	V3 rotatePoint(V3 o_a, V3 a, float theta);
 	V3 rotateVector(V3 a, float theta);
+	V3 Light(V3 n, V3 l, float ka); // directional light; this is material color
+	V3 Light(V3 P, V3 n, V3 L, float ka);
 };

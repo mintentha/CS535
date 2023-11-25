@@ -126,6 +126,16 @@ unsigned int V3::GetColor() {
 
 }
 
+void V3::SetColor(unsigned int color) {
+
+	unsigned char* rgba = (unsigned char*)&color;
+	V3& v = *this;
+	v[0] = (float)rgba[0] / 255.0f;
+	v[1] = (float)rgba[1] / 255.0f;
+	v[2] = (float)rgba[2] / 255.0f;
+
+}
+
 V3 V3::rotateVector(V3 a, float theta) {
 	// Rather than rotating around some arbitrary origin we just rotate in a particular direction
 	// So origin stays the same
@@ -147,7 +157,7 @@ V3 V3::rotatePoint(V3 o_a, V3 a, float theta) {
 		aux[1] = 1;
 		aux[2] = 0;
 	}
-	V3 b = (aux ^ a).normalized();
+	V3 b = (a ^ aux).normalized();
 	V3 c = (a ^ b).normalized();
 	M33 basisMat = M33();
 	basisMat.SetColumn(0, a.normalized());
@@ -164,4 +174,24 @@ V3 V3::rotatePoint(V3 o_a, V3 a, float theta) {
 	// Now we 
 	V3 pR = (basisMat.Transposed() * pPrimePrime) + o_a;
 	return pR;
+}
+
+// n and l have to be unit vectors
+V3 V3::Light(V3 n, V3 l, float ka) {
+
+	V3 ret;
+	V3& v = *this;
+
+	float kd = l * n;
+	kd = (kd > 0.0f) ? kd : 0.0f;
+	ret = v * (ka + (1.0f - ka) * kd);
+
+	return ret;
+
+}
+
+V3 V3::Light(V3 P, V3 n, V3 L, float ka) {
+
+	return Light(n, (L - P).normalized(), ka);
+
 }

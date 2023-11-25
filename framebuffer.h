@@ -32,8 +32,9 @@ public:
 	void Draw3DPoint(V3 P, V3 colv, int psize, PPC* ppc);
 	void Draw3DRoundPoint(V3 P, V3 colv, int psize, PPC* ppc);
 	void Draw2DRectangle(V3 p0, V3 p1, unsigned int col);
-	void DrawAxis(V3 ao, V3 adir, V3 col, PPC *ppc);
 	void DrawXYRectangle(V3 p0, V3 p1, V3 col, PPC* ppc);
 	void DrawXZRectangle(V3 p0, V3 p1, V3 col, PPC* ppc);
 	void DrawYZRectangle(V3 p0, V3 p1, V3 col, PPC* ppc);
+	void Draw3DSegment(V3 V0, V3 c0, V3 V1, V3 c1, PPC* ppc);
+	void VisualizeSamples(PPC* ppc, PPC* visppc, FrameBuffer* visfb, float zplane);
 };

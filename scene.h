@@ -9,17 +9,20 @@ class Scene {
 public:
 
 	GUI *gui;
-	FrameBuffer *fb;
-	PPC* ppc;
+	FrameBuffer *fb, *fb3;
+	PPC* ppc, *ppc3;
 	TM* tms;
 	int tmsN;
 	void Render();
+	void PointRender(PPC* cppc, FrameBuffer* cfb);
+	void WFRender(PPC* cppc, FrameBuffer* cfb);
+	void FilledRender(PPC* cppc, FrameBuffer* cfb);
 	Scene();
 	void DBG();
 	void NewButton();
-	V3 demoPoint;
-	V3 demoAxisOrigin;
-	V3 demoAxisDirection;
+
+	V3 L;
+	float ka;
 };
 
 extern Scene *scene;

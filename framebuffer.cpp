@@ -111,24 +111,24 @@ void FrameBuffer::SaveAsTiff(char* fname) {
 
 	TIFF* out = TIFFOpen(fname, "w");
 
-if (out == NULL) {
-	cerr << fname << " could not be opened" << endl;
-	return;
-}
+	if (out == NULL) {
+		cerr << fname << " could not be opened" << endl;
+		return;
+	}
 
-TIFFSetField(out, TIFFTAG_IMAGEWIDTH, w);
-TIFFSetField(out, TIFFTAG_IMAGELENGTH, h);
-TIFFSetField(out, TIFFTAG_SAMPLESPERPIXEL, 4);
-TIFFSetField(out, TIFFTAG_BITSPERSAMPLE, 8);
-TIFFSetField(out, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
-TIFFSetField(out, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
-TIFFSetField(out, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB);
+	TIFFSetField(out, TIFFTAG_IMAGEWIDTH, w);
+	TIFFSetField(out, TIFFTAG_IMAGELENGTH, h);
+	TIFFSetField(out, TIFFTAG_SAMPLESPERPIXEL, 4);
+	TIFFSetField(out, TIFFTAG_BITSPERSAMPLE, 8);
+	TIFFSetField(out, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
+	TIFFSetField(out, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
+	TIFFSetField(out, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB);
 
-for (uint32 row = 0; row < (unsigned int)h; row++) {
-	TIFFWriteScanline(out, &pix[(h - row - 1) * w], row);
-}
+	for (uint32 row = 0; row < (unsigned int)h; row++) {
+		TIFFWriteScanline(out, &pix[(h - row - 1) * w], row);
+	}
 
-TIFFClose(out);
+	TIFFClose(out);
 }
 
 void FrameBuffer::Set(int u, int v, unsigned int col) {
@@ -246,14 +246,34 @@ void FrameBuffer::Draw2DRectangle(V3 p0, V3 p1, unsigned int col) {
 	}
 }
 
-void FrameBuffer::DrawAxis(V3 ao, V3 adir, V3 col, PPC *ppc) {
-	adir = adir.normalized();
-	for (int i = -1000; i < 1000; i++) {
-		Draw3DPoint(ao + adir*i*0.25f, col, 2, ppc);
+void FrameBuffer::Draw3DSegment(V3 V0, V3 c0, V3 V1, V3 c1, PPC* ppc) {
+
+	V3 pV0;
+	if (!ppc->Project(V0, pV0))
+		return;
+	if (pV0[0] < 0.0f || pV0[0] > (float)w || pV0[1] < 0.0f || pV0[1] > (float) h)
+		return;
+	V3 pV1;
+	if (!ppc->Project(V1, pV1))
+		return;
+	if (pV1[0] < 0.0f || pV1[0] > (float)w || pV1[1] < 0.0f || pV1[1] > (float) h)
+		return;
+
+	int samplesN;
+	float uspan = fabsf(pV0[0] - pV1[0]);
+	float vspan = fabsf(pV0[1] - pV1[1]);
+	samplesN = (uspan < vspan) ? (int)vspan : (int)uspan;
+	samplesN += 2;
+
+	V3 cp;
+	V3 dp = (pV1 - pV0) / (float)(samplesN - 1);
+	V3 cc;
+	V3 dc = (c1 - c0) / (float)(samplesN - 1);
+	int si;
+	for (si = 0, cp = pV0, cc = c0; si < samplesN; si++, cp = cp + dp, cc = cc + dc) {
+		Draw2DPoint(cp, 1, cc.GetColor());
 	}
-	// Alternatively, project 2 points to get the line, and then connect between them in screen space so that there are no gaps?
-	// Although this means that there definitely wouldnt be any perception of depth to the axis as all points would appear equal size on screen rather than change with depth
-	//
+
 }
 
 void FrameBuffer::DrawXYRectangle(V3 p0, V3 p1, V3 col, PPC* ppc) {
@@ -297,4 +317,20 @@ void FrameBuffer::DrawYZRectangle(V3 p0, V3 p1, V3 col, PPC* ppc) {
 			Draw3DPoint(V3(p0[0], y, z), col, 1, ppc);
 		}
 	}
+}
+void FrameBuffer::VisualizeSamples(PPC* ppc, PPC* visppc, FrameBuffer* visfb, float zPlane = 0.0f) {
+
+	for (int v = 0; v < h; v++) {
+		for (int u = 0; u < w; u++) {
+			V3 pP(.5f + (float)u, .5f + (float)v, GetZ(u, v));
+			if (zPlane != 0.0f)
+				pP[2] = zPlane;
+			V3 P;
+			if (ppc->UnProject(pP, P) && Get(u, v) != 0xFFFFFFFF) {
+				V3 colv; colv.SetColor(Get(u, v));
+				visfb->Draw3DPoint(P, colv, 1, visppc);
+			}
+		}
+	}
+
 }
