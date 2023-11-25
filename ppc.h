@@ -20,10 +20,13 @@ public:
 	int UnProject(V3 pP, V3& P);
 	void translate(int dir, float amt);
 	void rotate(int axis, float theta);
+	void revolve(int axis, float theta, V3 center);
 	void SetPose(V3 newC, V3 LaP, V3 upgv);
 	float GetF();
 	void SetF(float f);
 	void SetInterpolated(PPC* ppc1, PPC* ppc2, int fi, int fN);
 	V3 GetVD();
 	void Visualize(float visf, PPC* ppc, FrameBuffer* fb);
+	V3 GetPixelCenter(int u, int v);
+	V3 GetRay(int u, int v);
 };

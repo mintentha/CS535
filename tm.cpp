@@ -183,7 +183,7 @@ void TM::RenderFilled(FrameBuffer* fb, PPC* ppc) {
 		V3 tri_proj_verts[] = { pverts[tri_vert_inds[0]],
 								pverts[tri_vert_inds[1]],
 								pverts[tri_vert_inds[2]] };
-		if (tri_proj_verts[0][0] == FLT_MAX) {
+		if (tri_proj_verts[0][0] == FLT_MAX || tri_proj_verts[1][0] == FLT_MAX || tri_proj_verts[2][0] == FLT_MAX) {
 			continue;
 		}
 		AABB aabb(tri_proj_verts, 3);
@@ -229,22 +229,29 @@ void TM::RenderFilled(FrameBuffer* fb, PPC* ppc) {
 		// [1 - k - l \\ k \\ l] = M[u \\ v \\ 1]w
 		M33 vtcs;
 		M33 tcsABCs;
-		M33 tcsQT;
+		M33 vMinusCMat = M33(tri_verts[0] - ppc->C, tri_verts[1] - ppc->C, tri_verts[2] - ppc->C).Transposed();
+		M33 QT = (vMinusCMat.Inverted() * M33(ppc->a, ppc->b, ppc->c).Transposed()).Transposed();
 		if (tcs) {
 			vtcs[0] = tcs[tri_vert_inds[0]];
 			vtcs[1] = tcs[tri_vert_inds[1]];
 			vtcs[2] = tcs[tri_vert_inds[2]];
 			tcsABCs = (ssim * vtcs).Transposed();
-			M33 vMinusCMat = M33(tri_verts[0] - ppc->C, tri_verts[1] - ppc->C, tri_verts[2] - ppc->C).Transposed();
-			tcsQT = (vMinusCMat.Inverted() * M33(ppc->a, ppc->b, ppc->c).Transposed()).Transposed();
 		}
 
+		M33 vnormals;
+		vnormals[0] = normals[tri_vert_inds[0]];
+		vnormals[1] = normals[tri_vert_inds[1]];
+		vnormals[2] = normals[tri_vert_inds[2]];
+		M33 normABCs = (ssim * vnormals).Transposed();
 
 		// set up linear screen space interpolation of 1/w
 		V3 zABC = ssim * V3(tri_proj_verts[0][2], tri_proj_verts[1][2], tri_proj_verts[2][2]);
 
 		for (int v = top; v <= bottom; v++) {
 			for (int u = left; u <= right; u++) {
+				if (u < 0 || u >= ppc->w || v < 0 || v >= ppc->h) {
+					continue;
+				}
 				V3 pixCenter(.5f + (float)u, .5f + (float)v, 1.0f);
 				V3 es = eeqM * pixCenter;
 				// if on wrong side of any of the edges continue
@@ -258,6 +265,15 @@ void TM::RenderFilled(FrameBuffer* fb, PPC* ppc) {
 					continue;
 				fb->SetZ(u, v, currz);
 
+				/* Interpolate Normals */
+				float normX = (QT * vnormals.GetColumn(0) * V3(u, v, 1)) / (QT * V3(1, 1, 1) * V3(u, v, 1));
+				float normY = (QT * vnormals.GetColumn(1) * V3(u, v, 1)) / (QT * V3(1, 1, 1) * V3(u, v, 1));
+				float normZ = (QT * vnormals.GetColumn(2) * V3(u, v, 1)) / (QT * V3(1, 1, 1) * V3(u, v, 1));
+				V3 norm(normX, normY, normZ);
+
+
+				V3 currColor(0.0f, 0.0f, 0.0f);
+				/* Interpolate Texture Coordinates, then use bilinear interpolation for color */
 				if (texture) {
 
 					
@@ -275,17 +291,28 @@ void TM::RenderFilled(FrameBuffer* fb, PPC* ppc) {
 					//V3 r = vtcs[0] + (vtcs[1] - vtcs[0]) * k + (vtcs[2] - vtcs[1]) * l;
 					//int tu = (int) (r[0] * (float)texture->w) % texture->w;
 					//int tv = (int) (r[1] * (float)texture->h) % texture->h;
-					float ru = (tcsQT * vtcs.GetColumn(0) * V3(u, v, 1)) / (tcsQT * V3(1, 1, 1) * V3(u, v, 1));
-					float rv = (tcsQT * vtcs.GetColumn(1) * V3(u, v, 1)) / (tcsQT * V3(1, 1, 1) * V3(u, v, 1));
-					int tu = max(((int) (ru * (float)texture->w)) % (texture->w), 0);
-					int tv = max(((int) (rv * (float)texture->h)) % (texture->h), 0);
-					fb->Set(u, v, texture->Get(tu, tv));
+					float ru = (QT * vtcs.GetColumn(0) * V3(u, v, 1)) / (QT * V3(1, 1, 1) * V3(u, v, 1));
+					float rv = (QT * vtcs.GetColumn(1) * V3(u, v, 1)) / (QT * V3(1, 1, 1) * V3(u, v, 1));
+					float tu = ru * (float)texture->w;
+					float tv = rv * (float)texture->h;
+					currColor = texture->BilinearInterpolate(tu, tv, true);
 				}
 				else {
-					V3 currColor = colsABCs * pixCenter;
-					fb->Set(u, v, currColor.GetColor());
+					currColor = colsABCs * pixCenter;
 				}
 
+				if (shininess) {
+					V3 L;
+					ppc->UnProject(V3((float) u + 0.5f, (float) v + 0.5f, currz), L);
+					L = L - ppc->C;
+					V3 R = 2 * (norm * L) * norm - L;
+					R = R.normalized();
+					R[1] = -1.0f * R[1]; // idk why but its vertically flipped
+					V3 reflectCol(scene->cube->DirectionLookup(R));
+					currColor = currColor + shininess * reflectCol;
+				}
+
+				fb->Set(u, v, currColor.GetColor());
 				if (scene->shadowsOn) {
 					// if in shadow set to black for now
 					V3 P; ppc->UnProject(V3(pixCenter[0], pixCenter[1], currz), P);
@@ -298,9 +325,10 @@ void TM::RenderFilled(FrameBuffer* fb, PPC* ppc) {
 					if (shz == FLT_MAX)
 						continue;
 					if (shz > LP[2] + 0.05f)
-						fb->Set(u, v, 0xFF000000);
+						currColor = V3(0.0f, 0.0f, 0.0f);
 				}
 
+				fb->Set(u, v, currColor.GetColor());
 			}
 		}
 	}

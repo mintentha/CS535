@@ -9,7 +9,7 @@ PPC::PPC(float hfov, int _w, int _h) {
 	a = V3(1.0f, 0.0f, 0.0f); // horizontal
 	b = V3(0.0f, -1.0f, 0.0f); // vertical
 	C = V3(0.0f, 0.0f, 0.0f); // camera
-	float hfovRad = hfov * 3.14159f / 180.0f;
+	float hfovRad = hfov * M_PI / 180.0f;
 	c = V3(-(float)w / 2.0f, (float)h / 2.0f, -(float)w / (2.0f * tanf(hfovRad / 2.0f)));
 	// depth
 }
@@ -24,7 +24,6 @@ int PPC::Project(V3 P, V3 &pP) {
 	M.SetColumn(2, c);
 
 	M33 Minv = M.Inverted();
-	M33 tmp = M * Minv;
 	V3 Q = Minv * (P - C);
 	if (Q[2] <= 0.0f)
 		return 0;
@@ -49,7 +48,7 @@ int PPC::UnProject(V3 pP, V3& P) {
 void PPC::translate(int dir, float amt) {
 	switch (dir) {
 		case DIR_UP_DOWN:
-			C = C + b * amt;
+			C = C - b * amt;
 			break;
 		case DIR_LEFT_RIGHT:
 			C = C + a * amt;
@@ -61,22 +60,44 @@ void PPC::translate(int dir, float amt) {
 }
 
 void PPC::rotate(int axis, float theta) {
+	V3 aD(0.0f, 0.0f, 0.0f);
 	switch (axis) {
 		case PAN:
-			a = a.rotateVector(b, -theta);
-			c = c.rotateVector(b, -theta);
+			aD = (b * -1.0f);
+			a = a.rotateVector(aD, -theta);
+			c = c.rotateVector(aD, -theta);
 			break;
 		case TILT:
-			b = b.rotateVector(a, theta);
-			c = c.rotateVector(a, theta);
+			aD = a;
+			b = b.rotateVector(aD, theta);
+			c = c.rotateVector(aD, theta);
 			break;
 		case ROLL:
-			V3 aD = (a ^ b).normalized();
+			aD = a ^ b;
 			a = a.rotateVector(aD, theta);
 			b = b.rotateVector(aD, theta);
 			c = c.rotateVector(aD, theta);
 			break;
 	}
+}
+
+void PPC::revolve(int axis, float theta, V3 center) {
+	V3 aD(0.0f, 0.0f, 0.0f);
+	switch (axis) {
+		case PAN:
+			aD = (b * -1.0f);
+			break;
+		case TILT:
+			aD = (a * -1.0f);
+			break;
+		case ROLL:
+			aD = a ^ b;
+			break;
+	}
+	C = C.rotatePoint(center, aD, theta);
+	a = a.rotateVector(aD, theta);
+	b = b.rotateVector(aD, theta);
+	c = c.rotateVector(aD, theta);
 }
 
 
@@ -154,5 +175,17 @@ void PPC::Visualize(float visf, PPC* ppc, FrameBuffer* fb) {
 	fb->Draw3DSegment(C + visc + visb * (float)h, V3(0.0f, 0.0f, 0.0f),
 		C + visc, V3(0.0f, 0.0f, 0.0f),
 		ppc);
+
+}
+
+V3 PPC::GetPixelCenter(int u, int v) {
+
+	return C + a * (.5f + (float)u) + b * (.5f + (float)v) + c;
+
+}
+
+V3 PPC::GetRay(int u, int v) {
+
+	return (GetPixelCenter(u, v) - C).normalized();
 
 }

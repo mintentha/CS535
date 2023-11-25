@@ -18,6 +18,11 @@ FrameBuffer::FrameBuffer(int u0, int v0, int _w, int _h) :
 
 }
 
+FrameBuffer::~FrameBuffer() {
+	delete[] pix;
+	delete[] zb;
+}
+
 void FrameBuffer::ClearZB() {
 
 
@@ -333,4 +338,43 @@ void FrameBuffer::VisualizeSamples(PPC* ppc, PPC* visppc, FrameBuffer* visfb, fl
 		}
 	}
 
+}
+
+
+float FrameBuffer::cycleMod(float f, int i) {
+	float result = fmodf(f, 2 * i);
+	if (result < 0) {
+		result = 2 * i + result;
+	}
+	if (result >= i) {
+		result = 2 * i - result;
+	}
+	return result;
+}
+
+V3 FrameBuffer::BilinearInterpolate(float tu, float tv, bool cycle) {
+	if (cycle) {
+		tu = cycleMod(tu, this->w);
+		tv = cycleMod(tv, this->h);
+	} else {
+		tu = fmodf(tu, this->w);
+		tv = fmodf(tv, this->h);
+	}
+
+	// find 4 nearest neighbors
+	int nearLeft = (int)tu % this->w;
+	int nearRight = (int)(tu + 1) % this->w;
+	int nearTop = (int)tv % this->h;
+	int nearBot = (int)(tv + 1) % this->h;
+	V3 c00(this->Get(nearLeft, nearTop));
+	V3 c01(this->Get(nearRight, nearTop));
+	V3 c10(this->Get(nearLeft, nearBot));
+	V3 c11(this->Get(nearRight, nearBot));
+	float w00 = (nearRight - tu) * (nearBot - tv);
+	float w01 = (tu - nearLeft) * (nearBot - tv);
+	float w10 = (nearRight - tu) * (tv - nearTop);
+	float w11 = (tu - nearLeft) * (tv - nearTop);
+	V3 col = w00 * c00 + w01 * c01 + w10 * c10 + w11 * c11;
+	//std::cout << c00 << "; " << c01 << "; " << c10 << "; " << c11 << "; " << col << std::endl;
+	return col;
 }

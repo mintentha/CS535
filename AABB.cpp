@@ -60,7 +60,20 @@ V3 AABB::GetCenter() {
 	return cornerHigh - cornerLow;
 }
 
-int AABB::ClipWithImageFrame(int w, int h) {
+
+// Should this function just return whether it is in or out of frame, or should it actually clip the corners?
+// For now i'll split into two
+void AABB::ClipWithImageFrame(int w, int h) {
+
+	corners[0][0] = max(min(corners[0][0], (float) w), 0.0f);
+	corners[1][0] = max(min(corners[1][0], (float) w), 0.0f);
+	corners[0][1] = max(min(corners[0][1], (float) h), 0.0f);
+	corners[1][1] = max(min(corners[1][1], (float) h), 0.0f);
+
+}
+
+
+int AABB::IsInImageFrame(int w, int h) {
 
 	if (corners[0][0] >= w)
 		return 0;

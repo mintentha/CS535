@@ -13,6 +13,7 @@ public:
 	unsigned int *tris;
 	int trisN;
 	FrameBuffer* texture;
+	float shininess = 0.0f;
 	int on;
 	TM() : verts(0), vertsN(0), tris(0), trisN(0), colors(0), normals(0),
 		pverts(0), tcs(0), texture(0), on(1) {};

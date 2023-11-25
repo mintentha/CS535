@@ -10,11 +10,13 @@
 class PPC;
 
 class FrameBuffer : public Fl_Gl_Window {
+	static float cycleMod(float f, int i);
 public:
 	unsigned int* pix; // pixel array // 0xAABBGGRR; // red 0xFF0000FF
 	int w, h;
 	float* zb;
 	FrameBuffer(int u0, int v0, int _w, int _h);
+	~FrameBuffer();
 	void ClearZB();
 	void draw();
 	void KeyboardHandle();
@@ -37,4 +39,5 @@ public:
 	void DrawYZRectangle(V3 p0, V3 p1, V3 col, PPC* ppc);
 	void Draw3DSegment(V3 V0, V3 c0, V3 V1, V3 c1, PPC* ppc);
 	void VisualizeSamples(PPC* ppc, PPC* visppc, FrameBuffer* visfb, float zplane);
+	V3 BilinearInterpolate(float tu, float tv, bool cycle);
 };

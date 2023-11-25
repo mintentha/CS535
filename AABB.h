@@ -16,5 +16,6 @@ public:
 	float GetDZ();
 	float GetDiagonalLength();
 	V3 GetCenter();
-	int ClipWithImageFrame(int w, int h);
+	int IsInImageFrame(int w, int h);
+	void ClipWithImageFrame(int w, int h);
 };

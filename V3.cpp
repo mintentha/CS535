@@ -4,7 +4,7 @@
 
 using namespace std;
 
-#include <ostream>
+#include <iostream>
 
 V3::V3(float x, float y, float z) {
 
@@ -12,6 +12,10 @@ V3::V3(float x, float y, float z) {
 	xyz[1] = y;
 	xyz[2] = z;
 
+}
+
+V3::V3(unsigned int col) {
+	this->SetColor(col);
 }
 
 float& V3::operator[](int i) {
@@ -69,6 +73,9 @@ V3 V3::operator*(float scf) {
 
 }
 
+V3 operator*(double scf, V3 v) {
+	return v * scf;
+}
 
 V3 V3::operator^(V3 v2) {
 	// y1z2 - z1y2
@@ -142,38 +149,27 @@ V3 V3::rotateVector(V3 a, float theta) {
 	return rotatePoint(V3(0.0f, 0.0f, 0.0f), a, theta);
 }
 
-V3 V3::rotatePoint(V3 o_a, V3 a, float theta) {
+V3 V3::rotatePoint(V3 aO, V3 aD, float theta) {
 	V3 aux;
-	// Choose auxilliary axis with smaller dot product with a
-	// x dot a = 1*a_x + 0*a_y + 0*a_z = a_x
-	// y dot a = 0*a_x + 1*a_y + 0*a_z = a_y
-	if (abs(a[0]) < abs(a[1])) {
-		aux[0] = 1;
-		aux[1] = 0;
-		aux[2] = 0;
+	if (fabsf(aD[0]) < fabsf(aD[1])) {
+		aux = V3(1.0f, 0.0f, 0.0f);
 	}
 	else {
-		aux[0] = 0;
-		aux[1] = 1;
-		aux[2] = 0;
+		aux = V3(0.0f, 1.0f, 0.0f);
 	}
-	V3 b = (a ^ aux).normalized();
-	V3 c = (a ^ b).normalized();
-	M33 basisMat = M33();
-	basisMat.SetColumn(0, a.normalized());
-	basisMat.SetColumn(1, b);
-	basisMat.SetColumn(2, c);
-	// Get point in new coordinate system
-	// To rotate we need to be at origin and translate back
-	// We could translate to origin and back in new coordinate system,
-	// but we would need to convert o_a to new coordinate system
-	// so instead we just do the translation in original coordinate system
-	V3 pPrime = basisMat * (*this - o_a);
-	// we put a as first axis so we rotate around x axis
-	V3 pPrimePrime = M33::RotationMatrix(M33::X_AXIS, theta * M_PI / 180.0f) * pPrime;
-	// Now we 
-	V3 pR = (basisMat.Transposed() * pPrimePrime) + o_a;
-	return pR;
+
+	V3 xa = aD ^ aux;
+	V3 ya = aD;
+	V3 za = xa ^ ya;
+
+	M33 lcs; lcs[0] = xa; lcs[1] = ya; lcs[2] = za;
+
+	V3& P = *this;
+	V3 lP = lcs * (P - aO);
+	M33 rotY = M33::RotationMatrix(M33::Y_AXIS, theta * M_PI / 180.0f);
+	V3 rlP = rotY * lP;
+	V3 ret = lcs.Inverted() * rlP + aO;
+	return ret;
 }
 
 // n and l have to be unit vectors
