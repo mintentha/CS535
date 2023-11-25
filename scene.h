@@ -23,6 +23,9 @@ public:
 
 	V3 L;
 	float ka;
+	int shadowsOn;
+	FrameBuffer* shfb;
+	PPC* shppc;
 };
 
 extern Scene *scene;

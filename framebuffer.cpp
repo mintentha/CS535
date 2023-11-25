@@ -107,7 +107,7 @@ void FrameBuffer::LoadTiff(char* fname) {
 }
 
 // save as tiff image
-void FrameBuffer::SaveAsTiff(char* fname) {
+void FrameBuffer::SaveAsTiff(const char* fname) {
 
 	TIFF* out = TIFFOpen(fname, "w");
 
@@ -147,6 +147,8 @@ unsigned int FrameBuffer::Get(int u, int v) {
 
 float FrameBuffer::GetZ(int u, int v) {
 
+	if (u < 0 || u > w - 1 || v < 0 || v > h - 1)
+		return FLT_MAX;
 	int uv = (h - 1 - v) * w + u;
 	return zb[uv];
 

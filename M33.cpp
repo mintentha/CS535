@@ -6,24 +6,26 @@ M33::M33(V3 row1, V3 row2, V3 row3) {
 	rows[2] = row3;
 }
 
-M33::M33(int principal_axis, float theta) {
+M33 M33::RotationMatrix(int principal_axis, float theta) {
+	M33 ret;
 	switch(principal_axis) {
 		case X_AXIS:
-			rows[0] = { 1, 0, 0 };
-			rows[1] = { 0, cos(theta), -sin(theta) };
-			rows[2] = { 0, sin(theta), cos(theta) };
+			ret.rows[0] = { 1, 0, 0 };
+			ret.rows[1] = { 0, cos(theta), -sin(theta) };
+			ret.rows[2] = { 0, sin(theta), cos(theta) };
 			break;
 		case Y_AXIS:
-			rows[0] = { cos(theta), 0, sin(theta) };
-			rows[1] = { 0, 1, 0 };
-			rows[2] = { -sin(theta), 0, cos(theta) };
+			ret.rows[0] = { cos(theta), 0, sin(theta) };
+			ret.rows[1] = { 0, 1, 0 };
+			ret.rows[2] = { -sin(theta), 0, cos(theta) };
 			break;
 		case Z_AXIS:
-			rows[0] = { cos(theta), -sin(theta), 0 };
-			rows[1] = { sin(theta), cos(theta), 0 };
-			rows[2] = { 0, 0, 1 };
+			ret.rows[0] = { cos(theta), -sin(theta), 0 };
+			ret.rows[1] = { sin(theta), cos(theta), 0 };
+			ret.rows[2] = { 0, 0, 1 };
 			break;
 	}
+	return ret;
 }
 
 V3& M33::operator[](int i) {

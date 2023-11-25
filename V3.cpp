@@ -170,7 +170,7 @@ V3 V3::rotatePoint(V3 o_a, V3 a, float theta) {
 	// so instead we just do the translation in original coordinate system
 	V3 pPrime = basisMat * (*this - o_a);
 	// we put a as first axis so we rotate around x axis
-	V3 pPrimePrime = M33(M33::X_AXIS, theta * M_PI / 180.0f) * pPrime;
+	V3 pPrimePrime = M33::RotationMatrix(M33::X_AXIS, theta * M_PI / 180.0f) * pPrime;
 	// Now we 
 	V3 pR = (basisMat.Transposed() * pPrimePrime) + o_a;
 	return pR;
@@ -193,5 +193,30 @@ V3 V3::Light(V3 n, V3 l, float ka) {
 V3 V3::Light(V3 P, V3 n, V3 L, float ka) {
 
 	return Light(n, (L - P).normalized(), ka);
+
+}
+
+V3 V3::EdgeEquation(V3 p0, V3 p1, V3 p2) {
+
+	float u0 = p0[0];
+	float u1 = p1[0];
+	float u2 = p2[0];
+
+	float v0 = p0[1];
+	float v1 = p1[1];
+	float v2 = p2[1];
+
+	V3 ret;
+	ret[0] = v1 - v0;
+	ret[1] = u0 - u1;
+	ret[2] = v0 * (u1 - u0) - u0 * (v1 - v0);
+
+	V3 p2p = p2;
+	p2p[2] = 1.0f;
+
+	if (ret * p2p < 0)
+		ret = ret * -1.0f;
+
+	return ret;
 
 }

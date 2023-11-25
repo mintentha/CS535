@@ -13,7 +13,7 @@ public:
 	V3 rows[3];
 	M33() {};
 	M33(V3 row1, V3 row2, V3 row3);
-	M33(int principal_axis, float theta);
+	static M33 RotationMatrix(int principal_axis, float theta);
 	V3& operator[](int i);
 	void SetColumn(int i, V3 colv);
 	V3 GetColumn(int i);

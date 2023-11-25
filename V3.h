@@ -30,4 +30,5 @@ public:
 	V3 rotateVector(V3 a, float theta);
 	V3 Light(V3 n, V3 l, float ka); // directional light; this is material color
 	V3 Light(V3 P, V3 n, V3 L, float ka);
+	V3 EdgeEquation(V3 p0, V3 p1, V3 p2);
 };

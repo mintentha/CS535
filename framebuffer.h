@@ -26,7 +26,7 @@ public:
 	void SetZ(int u, int v, float z);
 	void SetAsChecker(unsigned int col0, unsigned int col1, int csize);
 	void LoadTiff(char* fname);
-	void SaveAsTiff(char* fname);
+	void SaveAsTiff(const char* fname);
 	void Draw2DCircle(V3 p, int r, unsigned int col);
 	void Draw2DPoint(V3 p, int psize, unsigned int col);
 	void Draw3DPoint(V3 P, V3 colv, int psize, PPC* ppc);
