@@ -1,0 +1,72 @@
+
+
+struct VertexDataInput {
+	float4 vertex: POSITION;
+	float3 normal: NORMAL;
+	float3 color: COLOR;
+	float2 texcoord : TEXCOORD0;
+};
+
+struct VertexDataOutput {
+	float4 projv  : POSITION;
+	float3 normal : TEXCOORD0;
+	float3 xyz : TEXCOORD1;
+	float3 color: COLOR;
+	float2 texcoord : TEXCOORD2;
+};
+
+struct PixelDataOutput {
+	float3 color: COLOR;
+};
+
+VertexDataOutput VertexMain(VertexDataInput vdi, uniform float4x4 modelViewProj,
+	uniform float3 objectCenter, uniform float morphAnimation) {
+
+  VertexDataOutput ret;
+  float4 morphedVertex;
+  float R = 20.0f;
+  float3 M = objectCenter + normalize(vdi.vertex.xyz - objectCenter) * R;
+  morphedVertex.xyz = vdi.vertex.xyz + (M - vdi.vertex.xyz)*morphAnimation;
+  morphedVertex.w = 1.0f;
+//  ret.projv = mul(modelViewProj, vdi.vertex);
+  ret.projv = mul(modelViewProj, morphedVertex);
+  ret.normal = vdi.normal;
+  ret.xyz = vdi.vertex.xyz;
+  ret.color = vdi.color;
+  ret.texcoord = vdi.texcoord;
+
+  return ret;
+
+}
+
+// TEXTUREHINT: textures are passed to shaders as uniform parameters, see "sampler" keyword in Cg documentation
+
+// BRH: send billboard texture as uniform parameter
+// BRH: send billboard corners as 4 float3 uniform parameters
+// BRH: send normal n as (varying parameter) DONE
+// BRH: send output eye as float3 (uniform parameter) C DONE
+// BRH: send pixel xyz as varying parameter P DONE
+
+PixelDataOutput FragmentMain(VertexDataOutput pdi, uniform float3 eye, uniform float shouldTexture, uniform sampler2D texture : TEXUNIT0) {
+
+  PixelDataOutput ret;
+
+// BRH: compute eye ray e as (P-C).normalized
+// BRH: compute reflected ray r by reflecting e over n
+// BRH: intersect r with board rectangle
+// BRH: if no intersection, go lookup reflected ray in cubemap
+// BRH: if intersection, lookup color in bboard texture at intersection point
+  ret.color = pdi.color;
+//  ret.color = float4(1.0f, 0.0f, 0.0f, 1.0f);
+//  ret.color.rgb = (pdi.normal + float3(1.0f, 1.0f, 1.0f)) / 2.0f;
+//  ret.color.rgb = pdi.xyz;
+  if (shouldTexture) {
+    //ret.color.rgb = tex2D(texture, float2(0.1, 0.5)).rgb;
+	ret.color = tex2D(texture, pdi.texcoord);
+	//ret.color.rgb = float3(pdi.texcoord, 0);
+  }
+  //ret.color = tex2D(texture, pdi.texcoord).rgb;
+  return ret;
+
+}
+

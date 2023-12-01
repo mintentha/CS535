@@ -17,6 +17,13 @@ using namespace std;
 Scene::Scene() {
 
 
+	cgi = 0;
+	soi = 0;
+	needInitHW = 1;
+
+	hwfb = 0;
+
+
 	gui = new GUI();
 	gui->show();
 
@@ -36,7 +43,7 @@ Scene::Scene() {
 	float hfov = 55.0f;
 	ppc = new PPC(hfov, fb->w, fb->h);
 	ppc->translate(PPC::DIR_UP_DOWN, 15.0f);
-	tmsN = 1;
+	tmsN = 2;
 	tms = new TM[tmsN];
 	tms[0].LoadBin("geometry/teapot1K.bin");
 	//	tms[0].LoadBin("geometry/teapot57K.bin");
@@ -44,6 +51,24 @@ Scene::Scene() {
 	tms[0].Translate(tv);
 	tms[0].on = true;
 	tms[0].shininess = 0.6f;
+
+	FrameBuffer* texture1 = new FrameBuffer(10, 10, 128, 128);
+	texture1->LoadTiff("textures/fuzz.tiff");
+
+	AABB aabb = tms[0].GetAABB();
+	tms[1].SetQuad(
+		V3(aabb.corners[0][0], aabb.corners[0][1], aabb.corners[0][2]),
+		V3(aabb.corners[0][0], aabb.corners[0][1], aabb.corners[1][2]),
+		V3(aabb.corners[1][0], aabb.corners[0][1], aabb.corners[1][2]),
+		V3(aabb.corners[1][0], aabb.corners[0][1], aabb.corners[0][2])
+	);
+	V3 qc = tms[1].GetCenter();
+	tms[1].Translate(qc * -1.0f);
+	tms[1].Scale(3.0f);
+	tms[1].Translate(qc);
+	tms[1].SetAllColors(V3(0.9f, 0.9f, 0.9f));
+	tms[1].texture = texture1;
+	tms[1].on = true;
 
 	FrameBuffer *cross = new FrameBuffer(0, 0, 0, 0);
 	cross->LoadTiff("uffizi_cross.tiff");
@@ -70,6 +95,7 @@ Scene::Scene() {
 	shadowsOn = 0;
 
 	shadowsEnabled = false;
+	wfEnabled = false;
 }
 
 void Scene::PointRender(PPC* cppc, FrameBuffer* cfb) {
@@ -97,6 +123,7 @@ void Scene::DrawBackground(PPC* ppc, FrameBuffer *cfb) {
 }
 
 void Scene::WFRender(PPC* cppc, FrameBuffer* cfb) {
+	DrawBackground(cppc, cfb);
 	int psize = 5;
 	for (int tmi = 0; tmi < tmsN; tmi++) {
 		tms[tmi].RenderWF(cfb, cppc);
@@ -115,14 +142,71 @@ void Scene::FilledRender(PPC* cppc, FrameBuffer* cfb) {
 	cfb->redraw();
 }
 
+void Scene::RenderHW(PPC *cppc, FrameBuffer *cfb) {
+
+	int shaders = 1;
+	if (needInitHW) {
+		glEnable(GL_DEPTH_TEST);
+		// TEXTUREHINT: create textures
+			// load tiff from file to FrameBuffer
+			// tell hardware how many textures you want for it to create handles (texture ID's or pointers)
+			// pass pix data of FrameBuffer to hardware to actually create texture
+		if (shaders) {
+			cgi = new CGInterface();
+			cgi->PerSessionInit();
+			soi = new ShaderOneInterface();
+			soi->PerSessionInit(cgi);
+		}
+		needInitHW = 0;
+	}
+
+	if (shaders) {
+		cgi->EnableProfiles();
+		soi->PerFrameInit();
+	}
+
+
+	glClearColor(0.75f, 0.5f, 0.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	ppc->SetIntrinsicsHW();
+	ppc->SetExtrinsicsHW();
+
+	for (int tmi = 0; tmi < tmsN; tmi++) {
+		if (!tms[tmi].on)
+			continue;
+		tms[tmi].RenderHW();
+	}
+
+
+	if (shaders)
+		cgi->DisableProfiles();
+
+}
+
 void Scene::Render() {
-	if (shadowsEnabled) {
+	if (shadowsEnabled && shppc && shfb) {
 		shadowsOn = 0;
-		FilledRender(shppc, shfb);
+		if (wfEnabled) {
+			WFRender(shppc, shfb);
+		} else {
+			FilledRender(shppc, shfb);
+		}
 		shadowsOn = 1;
 	}
-	FilledRender(ppc, fb);
-	FilledRender(ppc3, fb3);
+	if (wfEnabled) {
+		WFRender(ppc, fb);
+	} else {
+		FilledRender(ppc, fb);
+	}
+	if (hwfb) {
+		hwfb->redraw();
+	}
+	if (wfEnabled) {
+		WFRender(ppc3, fb3);
+	} else {
+		FilledRender(ppc3, fb3);
+	}
 	float visFocalLength = 20.0f;
 	ppc->Visualize(visFocalLength, ppc3, fb3);
 	//fb3->Draw3DPoint(L, V3(1.0f, 1.0f, 0.0f), 17, ppc3);
@@ -130,7 +214,20 @@ void Scene::Render() {
 }
 
 void Scene::DBG() {
-	int framesN = 600;
+	ppc->C = ppc->C + ppc->GetVD() * 100.0f;
+	//fb->hide();
+	fb3->hide();
+	int u0 = 10;
+	int v0 = 40;
+	int h = 400;
+	int w = 600;
+	hwfb = new FrameBuffer(u0 + fb->w + u0, v0, w, h);
+	hwfb->label("hw");
+	hwfb->show();
+	hwfb->ishw = 1;
+	Render();
+	return;
+	int framesN = 1000;
 	int fi = 0;
 	int fps = 30;
 	std::chrono::duration<double> frame_length(1.0 / fps);
@@ -150,19 +247,9 @@ void Scene::DBG() {
 	while (fi < framesN) {
 		auto now = std::chrono::high_resolution_clock::now();
 		if (now - last_frame >= frame_length) {
-			//L = L + V3(0.0f, 0.2f, 0.0f);
-			if (shadowsEnabled) {
-				shppc->SetPose(L, tms[0].GetCenter(), V3(0.0f, 1.0f, 0.0f));
-			}
+			morphAnimation = (float)fi / (float)(framesN - 1);
 			Render();
 			Fl::check();
-			if (fi < 200) {
-				ppc->revolve(PPC::PAN, 1.0f, tms[0].GetCenter());
-			} else if (fi < 400) {
-				ppc->revolve(PPC::TILT, 1.0f, tms[0].GetCenter());
-			} else {
-				ppc->revolve(PPC::ROLL, 1.0f, tms[0].GetCenter());
-			}
 			fi++;
 		}
 	}

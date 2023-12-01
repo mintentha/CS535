@@ -112,7 +112,7 @@ void TM::LoadBin(char *fname) {
 	ifs.read(&yn, 1); // texture coordinates 2 floats
 	float *tcs = 0; // don't have texture coordinates for now
 	if (tcs)
-		delete tcs;
+		delete[] tcs;
 	tcs = 0;
 	if (yn == 'y') {
 		tcs = new float[vertsN * 2];
@@ -332,6 +332,73 @@ void TM::RenderFilled(FrameBuffer* fb, PPC* ppc) {
 			}
 		}
 	}
+}
+
+void TM::RenderHW() {
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glVertexPointer(3, GL_FLOAT, 0, (float*)verts);
+
+	if (colors) {
+		glEnableClientState(GL_COLOR_ARRAY);
+		glColorPointer(3, GL_FLOAT, 0, (float*)colors);
+	}
+
+	if (normals) {
+		glEnableClientState(GL_NORMAL_ARRAY);
+		glNormalPointer(GL_FLOAT, 0, (float*)normals);
+	}
+
+	if (tcs) {
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY_EXT);
+		if (texture) {
+			if (!textureID) {
+				glGenTextures(1, &textureID);
+				glBindTexture(GL_TEXTURE_2D, textureID);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture->w, texture->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture->pix);
+				glBindTexture(GL_TEXTURE_2D, 0);
+				/*glBindTexture(GL_TEXTURE_2D, textureID);
+				FrameBuffer* copy = new FrameBuffer(0, 0, texture->w, texture->h);
+				glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, copy->pix);
+				copy->show();
+				glBindTexture(GL_TEXTURE_2D, 0);*/
+			}
+			scene->soi->bindTexture(textureID);
+		}
+		for (int i = 0; i < vertsN; i++) {
+			//tcs[i][1] = 1;
+		}
+		glTexCoordPointer(2, GL_FLOAT, sizeof(float) * 3, (float*)tcs);
+	}
+
+	// TEXTUREHINT: if this mesh is to be textured
+	//		1. turn on texturing
+	//		2. select texture to be used with this mesh (only one texture per mesh is OK)
+	//		3. enable texture coordinate array
+	//		4. pass texture coordinate array; NOTE: texture coordinate should be array of PAIRs of floats
+
+	if (scene->wfEnabled) {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	}
+	glDrawElements(GL_TRIANGLES, 3 * trisN, GL_UNSIGNED_INT, tris);
+	if (scene->wfEnabled) {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	}
+
+
+	// TEXTUREHINT: disable texturing and texture coordinate array
+
+	if (colors)
+		glDisableClientState(GL_COLOR_ARRAY);
+
+	if (normals)
+		glDisableClientState(GL_NORMAL_ARRAY);
+	if (tcs) {
+		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+		scene->soi->unbindTexture();
+	}
+
+	glDisableClientState(GL_VERTEX_ARRAY);
+
 }
 
 void TM::Translate(V3 tv) {

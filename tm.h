@@ -9,14 +9,16 @@
 class TM {
 public:
 	V3 *verts, *colors, *normals, *pverts, *tcs;
+	// TEXTUREHINT: tcs has to be float *tcs; of length 2*vertsN for HW texturing
 	int vertsN;
 	unsigned int *tris;
 	int trisN;
 	FrameBuffer* texture;
+	unsigned int textureID; // openGL texture ID
 	float shininess = 0.0f;
 	int on;
 	TM() : verts(0), vertsN(0), tris(0), trisN(0), colors(0), normals(0),
-		pverts(0), tcs(0), texture(0), on(1) {};
+		pverts(0), tcs(0), texture(0), textureID(0), on(1) {};
 	void SetQuad(V3 v0, V3 v1, V3 v2, V3 v3);
 	void QuadTextureSize(float w, float h);
 	void Allocate(int vsN, int trsN);
@@ -24,6 +26,7 @@ public:
 	void RenderPoints(FrameBuffer *fb, int psize, PPC *ppc);
 	void RenderWF(FrameBuffer* fb, PPC* ppc);
 	void RenderFilled(FrameBuffer *fb, PPC *ppc);
+	void RenderHW();
 	void Translate(V3 tv);
 	V3 GetCenter();
 	void Rotate(V3 aO, V3 aD, float theta);

@@ -15,6 +15,7 @@ FrameBuffer::FrameBuffer(int u0, int v0, int _w, int _h) :
 	h = _h;
 	pix = new unsigned int[w * h];
 	zb = new float[w * h];
+	ishw = 0;
 
 }
 
@@ -33,7 +34,13 @@ void FrameBuffer::ClearZB() {
 
 void FrameBuffer::draw() {
 
-	glDrawPixels(w, h, GL_RGBA, GL_UNSIGNED_BYTE, pix);
+	if (!ishw) {
+		glDrawPixels(w, h, GL_RGBA, GL_UNSIGNED_BYTE, pix);
+	}
+	else {
+		scene->RenderHW(scene->ppc, scene->hwfb);
+		glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, pix);
+	}
 
 }
 
@@ -60,16 +67,77 @@ int FrameBuffer::handle(int event) {
 }
 
 void FrameBuffer::KeyboardHandle() {
+	if (this != scene->fb) {
+		return;
+	}
 	int key = Fl::event_key();
+	float rstep = 10.0f;
+	float tstep = 10.0f;
+	int needRender = 1;
 	switch (key) {
 	case FL_Left: {
-		cerr << "INFO: pressed left" << endl;
-		
+		scene->ppc->rotate(PPC::PAN, rstep);
 		break;
 	}
+	case FL_Right: {
+		scene->ppc->rotate(PPC::PAN, -rstep);
+		break;
+	}
+	case FL_Up: {
+		scene->ppc->rotate(PPC::TILT, rstep);
+		break;
+	}
+	case FL_Down: {
+		scene->ppc->rotate(PPC::TILT, -rstep);
+		break;
+	}
+	case 'o': {
+		scene->ppc->rotate(PPC::ROLL, rstep);
+		break;
+	}
+	case 'p': {
+		scene->ppc->rotate(PPC::ROLL, -rstep);
+		break;
+	}
+	case 'r': {
+		scene->ppc->C = scene->ppc->C - scene->ppc->b * tstep;
+		break;
+	}
+	case 'f': {
+		scene->ppc->C = scene->ppc->C + scene->ppc->b * tstep;
+		break;
+	}
+	case 'a': {
+		scene->ppc->C = scene->ppc->C - scene->ppc->a * tstep;
+		break;
+	}
+	case 'd': {
+		scene->ppc->C = scene->ppc->C + scene->ppc->a * tstep;
+		break;
+	}
+	case 'w': {
+		scene->ppc->C = scene->ppc->C + scene->ppc->GetVD() * tstep;
+		break;
+	}
+	case 's': {
+		scene->ppc->C = scene->ppc->C - scene->ppc->GetVD() * tstep;
+		break;
+	}
+	case 'x': {
+		scene->wfEnabled = !scene->wfEnabled;
+		break;
+	}
+	/*case 'z': {
+		scene->shadowsEnabled = !scene->shadowsEnabled;
+		break;
+	}*/
 	default:
 		cerr << "INFO: do not understand keypress" << endl;
 		return;
+	}
+	if (needRender) {
+		scene->Render();
+		redraw();
 	}
 
 }

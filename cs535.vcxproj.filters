@@ -1,25 +1,83 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="AABB.cpp" />
-    <ClCompile Include="framebuffer.cpp" />
-    <ClCompile Include="gui.cxx" />
-    <ClCompile Include="M33.cpp" />
-    <ClCompile Include="ppc.cpp" />
-    <ClCompile Include="scene.cpp" />
-    <ClCompile Include="tm.cpp" />
-    <ClCompile Include="V3.cpp" />
-    <ClCompile Include="CubeMap.cpp" />
+    <ClCompile Include="AABB.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CGInterface.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CubeMap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="framebuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="M33.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ppc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="scene.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tm.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="V3.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gui.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AABB.h" />
-    <ClInclude Include="framebuffer.h" />
-    <ClInclude Include="gui.h" />
-    <ClInclude Include="M33.h" />
-    <ClInclude Include="ppc.h" />
-    <ClInclude Include="scene.h" />
-    <ClInclude Include="tm.h" />
-    <ClInclude Include="V3.h" />
-    <ClInclude Include="CubeMap.h" />
+    <ClInclude Include="tm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="V3.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="scene.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ppc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="M33.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gui.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="framebuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CubeMap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CGInterface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AABB.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{dd94b0f9-8c49-4980-a56f-3bb66cfd1290}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{f524b913-af60-4954-bec0-14f5389d48b8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CG">
+      <UniqueIdentifier>{38d27002-027d-4438-aa47-83cb02e8b145}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="CG\shaderOne.cg">
+      <Filter>CG</Filter>
+    </None>
   </ItemGroup>
 </Project>

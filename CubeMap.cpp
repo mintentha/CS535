@@ -136,10 +136,10 @@ unsigned int CubeMap::DirectionLookup(V3 dir) {
 		return 0x00000000;
 	}
 	//std::cout << p << std::endl;
-	if (p[1] < 0) {
+	/*if (p[1] < 0) {
 		std::cout << dir << std::endl;
 		std::cout << p << std::endl;
-	}
+	}*/
 
 	/*
 	int face = getFace(dir);

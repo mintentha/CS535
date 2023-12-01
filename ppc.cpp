@@ -63,7 +63,7 @@ void PPC::rotate(int axis, float theta) {
 	V3 aD(0.0f, 0.0f, 0.0f);
 	switch (axis) {
 		case PAN:
-			aD = (b * -1.0f);
+			aD = b;
 			a = a.rotateVector(aD, -theta);
 			c = c.rotateVector(aD, -theta);
 			break;
@@ -74,9 +74,9 @@ void PPC::rotate(int axis, float theta) {
 			break;
 		case ROLL:
 			aD = a ^ b;
-			a = a.rotateVector(aD, theta);
-			b = b.rotateVector(aD, theta);
-			c = c.rotateVector(aD, theta);
+			a = a.rotateVector(aD, -theta);
+			b = b.rotateVector(aD, -theta);
+			c = c.rotateVector(aD, -theta);
 			break;
 	}
 }
@@ -187,5 +187,30 @@ V3 PPC::GetPixelCenter(int u, int v) {
 V3 PPC::GetRay(int u, int v) {
 
 	return (GetPixelCenter(u, v) - C).normalized();
+
+}
+
+void PPC::SetIntrinsicsHW() {
+
+	glViewport(0, 0, w, h);
+	float zNear = 1.0f;
+	float zFar = 10000.0f;
+	float scf = zNear / GetF();
+	float left = -(float)w / 2.0f * scf;
+	float right = +(float)w / 2.0f * scf;
+	float bottom = -(float)h / 2.0f * scf;
+	float top = +(float)h / 2.0f * scf;
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glFrustum(left, right, bottom, top, zNear, zFar);
+	glMatrixMode(GL_MODELVIEW);
+
+}
+
+void PPC::SetExtrinsicsHW() {
+
+	V3 lap = C + GetVD();
+	glLoadIdentity();
+	gluLookAt(C[0], C[1], C[2], lap[0], lap[1], lap[2], -b[0], -b[1], -b[2]);
 
 }

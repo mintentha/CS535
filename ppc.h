@@ -29,4 +29,6 @@ public:
 	void Visualize(float visf, PPC* ppc, FrameBuffer* fb);
 	V3 GetPixelCenter(int u, int v);
 	V3 GetRay(int u, int v);
+	void SetIntrinsicsHW();
+	void SetExtrinsicsHW();
 };

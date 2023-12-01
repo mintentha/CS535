@@ -13,6 +13,7 @@ class FrameBuffer : public Fl_Gl_Window {
 	static float cycleMod(float f, int i);
 public:
 	unsigned int* pix; // pixel array // 0xAABBGGRR; // red 0xFF0000FF
+	int ishw;
 	int w, h;
 	float* zb;
 	FrameBuffer(int u0, int v0, int _w, int _h);
